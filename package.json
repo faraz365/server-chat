@@ -3,19 +3,21 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "start": "node server/index.js",
+    "start": "node index.js",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "server": "nodemon server/index.js",
+    "server": "nodemon index.js",
     "client": "cd client && npm start",
     "build": "cd client && npm run build"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
     "express": "^4.21.2",
-    "joi": "^17.9.2",
+    "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.0.0",
+    "mongoose": "^8.16.5",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1"
   },
