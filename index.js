@@ -148,31 +148,31 @@ app.get('/api/users', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/profile', authenticateToken, async (req, res) => {
-  try {
-    const { error, value } = updateProfileSchema.validate(req.body);
-    if (error) return res.status(400).json({ message: error.details[0].message });
+// app.put('/api/profile', authenticateToken, async (req, res) => {
+//   try {
+//     const { error, value } = updateProfileSchema.validate(req.body);
+//     if (error) return res.status(400).json({ message: error.details[0].message });
 
-    const updatedUser = await User.findByIdAndUpdate(req.user.userId, { ...value, updatedAt: new Date() }, { new: true, projection: { password: 0 } });
-    if (!updatedUser) return res.status(404).json({ message: 'User not found' });
+//     const updatedUser = await User.findByIdAndUpdate(req.user.userId, { ...value, updatedAt: new Date() }, { new: true, projection: { password: 0 } });
+//     if (!updatedUser) return res.status(404).json({ message: 'User not found' });
 
-    res.json({ message: 'Profile updated', user: updatedUser });
-  } catch (err) {
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
+//     res.json({ message: 'Profile updated', user: updatedUser });
+//   } catch (err) {
+//     res.status(500).json({ message: 'Internal server error' });
+//   }
+// });
 
-app.delete('/api/account', authenticateToken, async (req, res) => {
-  try {
-    await Message.deleteMany({ $or: [{ senderId: req.user.userId }, { receiverId: req.user.userId }] });
-    const result = await User.deleteOne({ _id: req.user.userId });
-    if (result.deletedCount === 0) return res.status(404).json({ message: 'User not found' });
+// app.delete('/api/account', authenticateToken, async (req, res) => {
+//   try {
+//     await Message.deleteMany({ $or: [{ senderId: req.user.userId }, { receiverId: req.user.userId }] });
+//     const result = await User.deleteOne({ _id: req.user.userId });
+//     if (result.deletedCount === 0) return res.status(404).json({ message: 'User not found' });
 
-    res.json({ message: 'Account deleted' });
-  } catch (err) {
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
+//     res.json({ message: 'Account deleted' });
+//   } catch (err) {
+//     res.status(500).json({ message: 'Internal server error' });
+//   }
+// });
 
 app.get('/api/messages/:receiverId', authenticateToken, async (req, res) => {
   try {
@@ -195,21 +195,21 @@ app.get('/', (req, res) => {
 });
 
 
-app.put('/api/messages/mark-read/:senderId', authenticateToken, async (req, res) => {
-  try {
-    const result = await Message.updateMany({
-      senderId: req.params.senderId,
-      receiverId: req.user.userId,
-      isRead: false
-    }, {
-      $set: { isRead: true, readAt: new Date() }
-    });
+// app.put('/api/messages/mark-read/:senderId', authenticateToken, async (req, res) => {
+//   try {
+//     const result = await Message.updateMany({
+//       senderId: req.params.senderId,
+//       receiverId: req.user.userId,
+//       isRead: false
+//     }, {
+//       $set: { isRead: true, readAt: new Date() }
+//     });
 
-    res.json({ message: 'Messages marked as read', modifiedCount: result.modifiedCount });
-  } catch (err) {
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
+//     res.json({ message: 'Messages marked as read', modifiedCount: result.modifiedCount });
+//   } catch (err) {
+//     res.status(500).json({ message: 'Internal server error' });
+//   }
+// });
 
 app.post('/api/messages', authenticateToken, async (req, res) => {
   try {
