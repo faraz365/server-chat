@@ -1,7 +1,4 @@
-// Rewritten index.js using Mongoose instead of native MongoDB driver
 import express from 'express';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
@@ -11,13 +8,6 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
-const server = createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"]
-  }
-});
 
 // MongoDB and JWT setup
 const PORT = process.env.PORT || 5000;
@@ -132,7 +122,6 @@ app.post('/api/login', async (req, res) => {
 
     const token = jwt.sign({ userId: user._id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: '24h' });
     res.json({ message: 'Login successful', token, user: { id: user._id, name: user.name, email: user.email } });
-    console.log(token)
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ message: 'Internal server error' });
@@ -153,7 +142,12 @@ app.put('/api/profile', authenticateToken, async (req, res) => {
     const { error, value } = updateProfileSchema.validate(req.body);
     if (error) return res.status(400).json({ message: error.details[0].message });
 
-    const updatedUser = await User.findByIdAndUpdate(req.user.userId, { ...value, updatedAt: new Date() }, { new: true, projection: { password: 0 } });
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.userId,
+      { ...value, updatedAt: new Date() },
+      { new: true, projection: { password: 0 } }
+    );
+
     if (!updatedUser) return res.status(404).json({ message: 'User not found' });
 
     res.json({ message: 'Profile updated', user: updatedUser });
@@ -189,12 +183,6 @@ app.get('/api/messages/:receiverId', authenticateToken, async (req, res) => {
   }
 });
 
-
-app.get('/', (req, res) => {
-  res.send('Server is running successfully with mongodb');
-});
-
-
 app.put('/api/messages/mark-read/:senderId', authenticateToken, async (req, res) => {
   try {
     const result = await Message.updateMany({
@@ -227,59 +215,15 @@ app.post('/api/messages', authenticateToken, async (req, res) => {
     msg.senderId = msg.senderId.toString();
     msg.receiverId = msg.receiverId.toString();
 
-    // io.to(value.receiverId).emit('newMessage', msg);
-    // res.status(201).json({ message: 'Message sent', data: msg });
+    res.status(201).json({ message: 'Message sent', data: msg });
   } catch (err) {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-// Socket.IO Events
-// io.on('connection', (socket) => {
-//   console.log('User connected:', socket.id);
+app.get('/', (req, res) => {
+  res.send('Server is running successfully with MongoDB');
+});
 
-//   socket.on('join', (userId) => {
-//     socket.join(userId);
-//     console.log(`User ${userId} joined room`);
-//   });
-
-//   socket.on('sendMessage', async (data) => {
-//     try {
-//       const message = new Message({
-//         senderId: data.senderId,
-//         receiverId: data.receiverId,
-//         content: data.content
-//       });
-//       await message.save();
-
-//       const msg = message.toObject();
-//       msg.senderId = msg.senderId.toString();
-//       msg.receiverId = msg.receiverId.toString();
-
-//       io.to(data.receiverId).emit('newMessage', msg);
-//       socket.emit('messageSent', msg);
-//     } catch (err) {
-//       console.error('Socket message error:', err);
-//       socket.emit('messageError', { error: 'Failed to send message' });
-//     }
-//   });
-
-//   socket.on('markMessagesAsRead', ({ senderId, receiverId }) => {
-//     io.to(senderId).emit('messagesMarkedAsRead', { senderId, receiverId });
-//   });
-
-//   socket.on('userOnline', async (userId) => {
-//     try {
-//       await User.findByIdAndUpdate(userId, { isOnline: true, lastSeen: new Date() });
-//       socket.broadcast.emit('userStatusUpdate', { userId, isOnline: true });
-//     } catch (err) {
-//       console.error('User online error:', err);
-//     }
-//   });
-
-//   socket.on('disconnect', () => {
-//     console.log('User disconnected:', socket.id);
-//   });
-// });
-
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// ✅ Use plain app.listen — no socket server!
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
