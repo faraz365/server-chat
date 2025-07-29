@@ -148,31 +148,31 @@ app.get('/api/users', authenticateToken, async (req, res) => {
   }
 });
 
-// app.put('/api/profile', authenticateToken, async (req, res) => {
-//   try {
-//     const { error, value } = updateProfileSchema.validate(req.body);
-//     if (error) return res.status(400).json({ message: error.details[0].message });
+app.put('/api/profile', authenticateToken, async (req, res) => {
+  try {
+    const { error, value } = updateProfileSchema.validate(req.body);
+    if (error) return res.status(400).json({ message: error.details[0].message });
 
-//     const updatedUser = await User.findByIdAndUpdate(req.user.userId, { ...value, updatedAt: new Date() }, { new: true, projection: { password: 0 } });
-//     if (!updatedUser) return res.status(404).json({ message: 'User not found' });
+    const updatedUser = await User.findByIdAndUpdate(req.user.userId, { ...value, updatedAt: new Date() }, { new: true, projection: { password: 0 } });
+    if (!updatedUser) return res.status(404).json({ message: 'User not found' });
 
-//     res.json({ message: 'Profile updated', user: updatedUser });
-//   } catch (err) {
-//     res.status(500).json({ message: 'Internal server error' });
-//   }
-// });
+    res.json({ message: 'Profile updated', user: updatedUser });
+  } catch (err) {
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
-// app.delete('/api/account', authenticateToken, async (req, res) => {
-//   try {
-//     await Message.deleteMany({ $or: [{ senderId: req.user.userId }, { receiverId: req.user.userId }] });
-//     const result = await User.deleteOne({ _id: req.user.userId });
-//     if (result.deletedCount === 0) return res.status(404).json({ message: 'User not found' });
+app.delete('/api/account', authenticateToken, async (req, res) => {
+  try {
+    await Message.deleteMany({ $or: [{ senderId: req.user.userId }, { receiverId: req.user.userId }] });
+    const result = await User.deleteOne({ _id: req.user.userId });
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'User not found' });
 
-//     res.json({ message: 'Account deleted' });
-//   } catch (err) {
-//     res.status(500).json({ message: 'Internal server error' });
-//   }
-// });
+    res.json({ message: 'Account deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 app.get('/api/messages/:receiverId', authenticateToken, async (req, res) => {
   try {
@@ -195,21 +195,21 @@ app.get('/', (req, res) => {
 });
 
 
-// app.put('/api/messages/mark-read/:senderId', authenticateToken, async (req, res) => {
-//   try {
-//     const result = await Message.updateMany({
-//       senderId: req.params.senderId,
-//       receiverId: req.user.userId,
-//       isRead: false
-//     }, {
-//       $set: { isRead: true, readAt: new Date() }
-//     });
+app.put('/api/messages/mark-read/:senderId', authenticateToken, async (req, res) => {
+  try {
+    const result = await Message.updateMany({
+      senderId: req.params.senderId,
+      receiverId: req.user.userId,
+      isRead: false
+    }, {
+      $set: { isRead: true, readAt: new Date() }
+    });
 
-//     res.json({ message: 'Messages marked as read', modifiedCount: result.modifiedCount });
-//   } catch (err) {
-//     res.status(500).json({ message: 'Internal server error' });
-//   }
-// });
+    res.json({ message: 'Messages marked as read', modifiedCount: result.modifiedCount });
+  } catch (err) {
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 app.post('/api/messages', authenticateToken, async (req, res) => {
   try {
@@ -227,59 +227,59 @@ app.post('/api/messages', authenticateToken, async (req, res) => {
     msg.senderId = msg.senderId.toString();
     msg.receiverId = msg.receiverId.toString();
 
-    io.to(value.receiverId).emit('newMessage', msg);
-    res.status(201).json({ message: 'Message sent', data: msg });
+    // io.to(value.receiverId).emit('newMessage', msg);
+    // res.status(201).json({ message: 'Message sent', data: msg });
   } catch (err) {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
 
 // Socket.IO Events
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
+// io.on('connection', (socket) => {
+//   console.log('User connected:', socket.id);
 
-  socket.on('join', (userId) => {
-    socket.join(userId);
-    console.log(`User ${userId} joined room`);
-  });
+//   socket.on('join', (userId) => {
+//     socket.join(userId);
+//     console.log(`User ${userId} joined room`);
+//   });
 
-  socket.on('sendMessage', async (data) => {
-    try {
-      const message = new Message({
-        senderId: data.senderId,
-        receiverId: data.receiverId,
-        content: data.content
-      });
-      await message.save();
+//   socket.on('sendMessage', async (data) => {
+//     try {
+//       const message = new Message({
+//         senderId: data.senderId,
+//         receiverId: data.receiverId,
+//         content: data.content
+//       });
+//       await message.save();
 
-      const msg = message.toObject();
-      msg.senderId = msg.senderId.toString();
-      msg.receiverId = msg.receiverId.toString();
+//       const msg = message.toObject();
+//       msg.senderId = msg.senderId.toString();
+//       msg.receiverId = msg.receiverId.toString();
 
-      io.to(data.receiverId).emit('newMessage', msg);
-      socket.emit('messageSent', msg);
-    } catch (err) {
-      console.error('Socket message error:', err);
-      socket.emit('messageError', { error: 'Failed to send message' });
-    }
-  });
+//       io.to(data.receiverId).emit('newMessage', msg);
+//       socket.emit('messageSent', msg);
+//     } catch (err) {
+//       console.error('Socket message error:', err);
+//       socket.emit('messageError', { error: 'Failed to send message' });
+//     }
+//   });
 
-  socket.on('markMessagesAsRead', ({ senderId, receiverId }) => {
-    io.to(senderId).emit('messagesMarkedAsRead', { senderId, receiverId });
-  });
+//   socket.on('markMessagesAsRead', ({ senderId, receiverId }) => {
+//     io.to(senderId).emit('messagesMarkedAsRead', { senderId, receiverId });
+//   });
 
-  socket.on('userOnline', async (userId) => {
-    try {
-      await User.findByIdAndUpdate(userId, { isOnline: true, lastSeen: new Date() });
-      socket.broadcast.emit('userStatusUpdate', { userId, isOnline: true });
-    } catch (err) {
-      console.error('User online error:', err);
-    }
-  });
+//   socket.on('userOnline', async (userId) => {
+//     try {
+//       await User.findByIdAndUpdate(userId, { isOnline: true, lastSeen: new Date() });
+//       socket.broadcast.emit('userStatusUpdate', { userId, isOnline: true });
+//     } catch (err) {
+//       console.error('User online error:', err);
+//     }
+//   });
 
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-  });
-});
+//   socket.on('disconnect', () => {
+//     console.log('User disconnected:', socket.id);
+//   });
+// });
 
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
